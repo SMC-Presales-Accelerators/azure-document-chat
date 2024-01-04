@@ -6,6 +6,7 @@ data/local_data/
 
 .env
 .venv
+docker_compose.yml
 
 # VSCode
 .vscode/
@@ -156,3 +157,4 @@ cython_debug/
 #.idea/
 
 
+docker-compose.yml

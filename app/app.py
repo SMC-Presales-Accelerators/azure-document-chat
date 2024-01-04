@@ -92,12 +92,16 @@ async def bot_service_auth(req: Request) -> Response:
 async def index(request):
     return web.FileResponse('./static/index.html')
 
+async def favicon(request):
+    return web.FileResponse('./static/favicon.ico')
+
 print("Base Path set to: %s" % (BASE_PATH))
 
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post(BASE_PATH + "/api/messages", messages)
 APP.router.add_get(BASE_PATH + "/api/auth", bot_service_auth)
 APP.router.add_get(BASE_PATH + "/", index)
+APP.router.add_get(BASE_PATH + "/favicon.ico", favicon)
 APP.router.add_static(BASE_PATH + "/js", "static/js")
 
 if __name__ == "__main__":

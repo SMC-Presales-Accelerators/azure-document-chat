@@ -16,3 +16,4 @@ azure-ai-formrecognizer
 azure-storage-blob
 rarfile
 setuptools
+gunicorn

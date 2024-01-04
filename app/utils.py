@@ -333,13 +333,13 @@ def reduce_openapi_spec(spec: dict, dereference: bool = True) -> ReducedOpenAPIS
     )
 
 class BlobStorageProperties:
-    connection_string = os.environ['BLOB_CONNECTION_STRING']
+    connection_string = os.environ['BLOB_CHAT_CONNECTION_STRING']
 
     def __init__(self):
         props = self.create_dict_from_connection_string()
         self.account_name = props['AccountName']
         self.account_key = props['AccountKey']
-        self.container_name = os.environ['BLOB_CONTAINER_NAME']
+        self.container_name = os.environ['BLOB_CHAT_CONTAINER_NAME']
 
     def create_dict_from_connection_string(self):
         props = {}
