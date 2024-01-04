@@ -520,7 +520,6 @@ class GetDocSearchResults_Tool(BaseTool):
     k: int = 10
     reranker_th: int = 1
     similarity_k: int = 3
-    sas_token: str = "" 
     embedding_model: str = "text-embedding-ada-002"
     blob_properties: BlobStorageProperties = BlobStorageProperties()
     
@@ -563,7 +562,7 @@ class DocSearchAgent(BaseTool):
         try:
             tools = [GetDocSearchResults_Tool(indexes=self.indexes,vector_only_indexes=self.vector_only_indexes,
                                       k=self.k, reranker_th=self.reranker_th, similarity_k=self.similarity_k,
-                                      sas_token=self.sas_token, embedding_model=self.embedding_model)]
+                                      embedding_model=self.embedding_model)]
             
             parsed_input = self._parse_input(tool_input)
             
