@@ -80,7 +80,7 @@ COMBINE_PROMPT = PromptTemplate(
 WELCOME_MESSAGE = """
 Hello and welcome! \U0001F44B
 
-My name is Jarvis, a smart virtual assistant designed to assist you.
+I'm a smart virtual assistant designed to assist you.
 Here's how you can interact with me:
 
 I have various plugins and tools at my disposal to answer your questions effectively. Here are the available options:
@@ -91,12 +91,6 @@ I have various plugins and tools at my disposal to answer your questions effecti
 
 3. \U0001F50D **@docsearch**: This tool allows me to search a specialized search engine index. It includes 10,000 ArXiv computer science documents from 2020-2021 and 90,000 Covid research articles from the same years.
 
-4. \U0001F4D6 **@booksearch**: This tool allows me to search on 5 specific books: Rich Dad Poor Dad, Made to Stick, Azure Cognitive Search Documentation, Fundamentals of Physics and Boundaries.
-
-5. \U0001F4CA **@sqlsearch**: By utilizing this tool, I can access a SQL database containing information about Covid cases, deaths, and hospitalizations in 2020-2021.
-
-6. \U0001F4E1 **@apisearch**: With this tool I can access the https://disease.sh/ API containing real-time covid statistics for US States, Countries and Continents.
-
 From all of my sources, I will provide the necessary information and also mention the sources I used to derive the answer. This way, you can have transparency about the origins of the information and understand how I arrived at the response.
 
 To make the most of my capabilities, please mention the specific tool you'd like me to use when asking your question. Here's an example:
@@ -105,9 +99,6 @@ To make the most of my capabilities, please mention the specific tool you'd like
 @bing, who is the daughter of the President of India?
 @chatgpt, how can I read a remote file from a URL using pandas?
 @docsearch, Does chloroquine really works against covid?
-@booksearch, tell me the legend of the stolen kidney in the book "Made To Stick"
-@sqlsearch, how many people died on the West Coast in 2020?
-@apisearch, in UK how many people died of covid percentage wise based on its population?
 ```
 
 Feel free to ask any question and specify the tool you'd like me to utilize. I'm here to assist you!

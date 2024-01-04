@@ -29,6 +29,10 @@ APP_ID = os.environ.get("MICROSOFT_APP_ID", "")
 APP_PASSWORD = os.environ.get("MICROSOFT_APP_PASSWORD", "")
 
 BASE_PATH = os.environ.get("DOC_CHAT_BASE_PATH", "")
+if BASE_PATH != "" and BASE_PATH[-1] == "/":
+    BASE_PATH = BASE_PATH[:-1]
+if BASE_PATH != "" and BASE_PATH[0] != "/":
+    BASE_PATH = "/" + BASE_PATH
 
 # Create adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.

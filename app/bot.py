@@ -89,7 +89,6 @@ class MyBot(ActivityHandler):
         text_indexes = ["cogsrch-index-files"]
         doc_search = DocSearchAgent(llm=llm, vector_only_indexes=text_indexes,
                            k=10, similarity_k=4, reranker_th=1,
-                           sas_token=os.environ['BLOB_SAS_TOKEN'],
                            callback_manager=cb_manager, return_direct=True)
         www_search = BingSearchAgent(llm=llm, k=5, callback_manager=cb_manager, return_direct=True)
         chatgpt_search = ChatGPTTool(llm=llm, callback_manager=cb_manager, return_direct=True)

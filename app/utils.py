@@ -338,7 +338,7 @@ class BlobStorageProperties:
     def __init__(self):
         props = self.create_dict_from_connection_string()
         self.account_name = props['AccountName']
-        self.account_key = props['AccountKey']
+        self.account_key = props['AccountKey'] + "=="
         self.container_name = os.environ['BLOB_CHAT_CONTAINER_NAME']
 
     def create_dict_from_connection_string(self):
@@ -353,7 +353,6 @@ def create_service_sas_blob(blob_name, blob_properties: BlobStorageProperties = 
     # Create a SAS token that's valid for one day, as an example
     start_time = datetime.datetime.now(datetime.timezone.utc)
     expiry_time = start_time + datetime.timedelta(days=1)
-
     sas_token = generate_blob_sas(
         account_name=blob_properties.account_name,
         container_name=blob_properties.container_name,
@@ -383,7 +382,7 @@ def get_search_results(query: str, indexes: list,
         search_payload = {
             "search": query,
             "queryType": "semantic",
-            "semanticConfiguration": "my-semantic-config",
+            "semanticConfiguration": "openai-vectordb-semantic-configuration",
             "count": "true",
             "speller": "lexicon",
             "queryLanguage": "en-us",
@@ -395,7 +394,7 @@ def get_search_results(query: str, indexes: list,
             search_payload["vectors"]= [{"value": query_vector, "fields": "chunkVector","k": k}]
             search_payload["select"]= "id, title, chunk, name, location"
         else:
-            search_payload["select"]= "id, title, chunks, name, location, vectorized"
+            search_payload["select"]= "id, title, chunk, name, location"
         
 
         resp = requests.post(os.environ['AZURE_SEARCH_ENDPOINT'] + "/indexes/" + index + "/docs/search",
@@ -413,7 +412,7 @@ def get_search_results(query: str, indexes: list,
                 content[result['id']]={
                                         "title": result['title'], 
                                         "name": result['name'], 
-                                        "location": result['location'] + "?" + generate_blob_sas(result['title'], blob_properties) if result['location'] else "",
+                                        "location": result['location'] + "?" + create_service_sas_blob(result['name'], blob_properties) if result['location'] else "",
                                         "caption": result['@search.captions'][0]['text'],
                                         "index": index
                                     }
@@ -422,9 +421,8 @@ def get_search_results(query: str, indexes: list,
                     content[result['id']]["score"]= result['@search.score'] # Uses the Hybrid RRF score
               
                 else:
-                    content[result['id']]["chunks"]= result['chunks']
-                    content[result['id']]["score"]= result['@search.rerankerScore'] # Uses the reranker score
-                    content[result['id']]["vectorized"]= result['vectorized']
+                    content[result['id']]["chunk"]= result['chunk']
+                    content[result['id']]["score"]= result['@search.score'] # Uses the Hybrid RRF score
                 
     # After results have been filtered, sort and add the top k to the ordered_content
     if vector_search:
@@ -524,17 +522,12 @@ class GetDocSearchResults_Tool(BaseTool):
     blob_properties: BlobStorageProperties = BlobStorageProperties()
     
     def _run(self, query: str) -> str:
-        
-        embedder = AzureOpenAIEmbeddings(model="text-embedding-ada-002", azure_deployment=os.environ['AZURE_OPENAI_EMBEDDING_DEPLOYMENT'], skip_empty=True) 
-        vector_indexes = self.vector_only_indexes
+
         # Search in all vector-based indexes available
-        ordered_results = get_search_results(query, indexes=vector_indexes, k=self.k,
-                                             reranker_threshold=self.reranker_th,
-                                             vector_search=True,
-                                             similarity_k=self.similarity_k,
-                                             query_vector = embedder.embed_query(query),
-                                             blob_properties=self.blob_properties,
-                                            )
+        ordered_results = get_search_results(query, indexes=self.vector_only_indexes, k=self.k, 
+                                        reranker_threshold=self.reranker_th,
+                                        vector_search=False,
+                                        blob_properties=self.blob_properties)
         
         return ordered_results
 
@@ -554,8 +547,7 @@ class DocSearchAgent(BaseTool):
     vector_only_indexes: List[str] = []
     k: int = 10
     reranker_th: int = 1
-    similarity_k: int = 3
-    sas_token: str = ""   
+    similarity_k: int = 3 
     embedding_model: str = "text-embedding-ada-002"
     
     def _run(self, tool_input: Union[str, Dict],) -> str:
