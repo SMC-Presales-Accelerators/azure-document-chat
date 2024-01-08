@@ -336,22 +336,14 @@ class BlobStorageProperties:
     connection_string = os.environ['BLOB_CHAT_CONNECTION_STRING']
 
     def __init__(self):
-        props = self.create_dict_from_connection_string()
-        self.account_name = props['AccountName']
-        self.account_key = props['AccountKey'] + "=="
-        self.container_name = os.environ['BLOB_CHAT_CONTAINER_NAME']
 
-    def create_dict_from_connection_string(self):
-        props = {}
-        temp = self.connection_string.split(';')
-        for item in temp:
-            item_split = item.split('=')
-            props[item_split[0]] = item_split[1]
-        return props
+        self.account_name = re.search('AccountName=([^;]*);', self.connection_string).group(1)
+        self.account_key = re.search('AccountKey=([^;]*);', self.connection_string).group(1)
+        self.container_name = os.environ['BLOB_CHAT_CONTAINER_NAME']
 
 def create_service_sas_blob(blob_name, blob_properties: BlobStorageProperties = BlobStorageProperties()):
     # Create a SAS token that's valid for one day, as an example
-    start_time = datetime.datetime.now(datetime.timezone.utc)
+    start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10)
     expiry_time = start_time + datetime.timedelta(days=1)
     sas_token = generate_blob_sas(
         account_name=blob_properties.account_name,
