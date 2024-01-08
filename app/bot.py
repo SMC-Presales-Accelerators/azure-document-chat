@@ -19,7 +19,7 @@ from langchain.schema import AgentAction, AgentFinish, LLMResult
 
 #custom libraries that we will use later in the app
 from prompts import WELCOME_MESSAGE, CUSTOM_CHATBOT_PREFIX, CUSTOM_CHATBOT_SUFFIX
-from utils import DocSearchAgent, ChatGPTTool, BingSearchAgent, run_agent, reduce_openapi_spec
+from utils import DocSearchAgent, ChatGPTTool, BingSearchAgent, run_agent, model_tokens_limit
 
 from botbuilder.core import ActivityHandler, TurnContext
 from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
@@ -106,7 +106,9 @@ class MyBot(ActivityHandler):
                         user_id=user_id
                     )
         cosmos.prepare_cosmos()
-        memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=30, chat_memory=cosmos)
+        # Limit memory tokens to max minus 1500 to allow answer room plus buffer
+        history_token_limit = model_tokens_limit(self.model_name) - 1500
+        memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=30, chat_memory=cosmos, max_token_limit=history_token_limit)
         agent = ConversationalChatAgent.from_llm_and_tools(llm=llm, tools=tools,system_message=CUSTOM_CHATBOT_PREFIX,human_message=CUSTOM_CHATBOT_SUFFIX)
         agent_chain = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, memory=memory, handle_parsing_errors=True)
 

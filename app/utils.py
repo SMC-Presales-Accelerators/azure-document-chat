@@ -241,7 +241,7 @@ def num_tokens_from_string(string: str) -> int:
     num_tokens = len(encoding.encode(string))
     return num_tokens
 
-# Returning the toekn limit based on model selection
+# Returning the token limit based on model selection
 def model_tokens_limit(model: str) -> int:
     """Returns the number of tokens limits in a text model."""
     if model == "gpt-35-turbo":
