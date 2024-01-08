@@ -83,12 +83,12 @@ class MyBot(ActivityHandler):
         cb_manager = CallbackManager(handlers=[cb_handler])
 
         # Set LLM 
-        llm = AzureChatOpenAI(deployment_name=self.model_name, temperature=0.5, max_tokens=1000, callback_manager=cb_manager)
+        llm = AzureChatOpenAI(deployment_name=self.model_name, temperature=0.5, max_tokens=1500, callback_manager=cb_manager)
 
         # Initialize our Tools/Experts
         text_indexes = ["cogsrch-index-files"]
         doc_search = DocSearchAgent(llm=llm, vector_only_indexes=text_indexes,
-                           k=10, similarity_k=4, reranker_th=1,
+                           k=5, similarity_k=4, reranker_th=1,
                            callback_manager=cb_manager, return_direct=True)
         www_search = BingSearchAgent(llm=llm, k=5, callback_manager=cb_manager, return_direct=True)
         chatgpt_search = ChatGPTTool(llm=llm, callback_manager=cb_manager, return_direct=True)
@@ -108,7 +108,7 @@ class MyBot(ActivityHandler):
         cosmos.prepare_cosmos()
         # Limit memory tokens to max minus 1500 to allow answer room plus buffer
         history_token_limit = model_tokens_limit(self.model_name) - 1500
-        memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=30, chat_memory=cosmos, max_token_limit=history_token_limit)
+        memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=10, chat_memory=cosmos, max_token_limit=history_token_limit)
         agent = ConversationalChatAgent.from_llm_and_tools(llm=llm, tools=tools,system_message=CUSTOM_CHATBOT_PREFIX,human_message=CUSTOM_CHATBOT_SUFFIX)
         agent_chain = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, memory=memory, handle_parsing_errors=True)
 
