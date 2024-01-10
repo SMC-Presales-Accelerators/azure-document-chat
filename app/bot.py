@@ -1,26 +1,28 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 import os
+import json
 import asyncio
 
 from operator import itemgetter
 
 from concurrent.futures import ThreadPoolExecutor
 from langchain_openai import AzureOpenAIEmbeddings, AzureChatOpenAI
-from langchain.memory import ConversationBufferWindowMemory
-from langchain.memory import CosmosDBChatMessageHistory
+from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from typing import Any, Dict, List, Optional, Union
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import AgentAction
 
 
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.docstore.document import Document
+from langchain_core.messages import BaseMessage
 
 from langchain.globals import set_debug
-set_debug(True)
+set_debug(False)
 
 #custom libraries that we will use later in the app
 from utils import AzureAiSearchIndexSchema, BlobStorageProperties, create_service_sas_blob
@@ -121,29 +123,34 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
         llm = AzureChatOpenAI(deployment_name=model_name, temperature=0.5, max_tokens=2000)
 
         # Set brain Agent with persisten memory in CosmosDB
-        # cosmos = CosmosDBChatMessageHistory(
-        #                 cosmos_endpoint=os.environ['AZURE_COSMOSDB_ENDPOINT'],
-        #                 cosmos_database=os.environ['AZURE_COSMOSDB_NAME'],
-        #                 cosmos_container=os.environ['AZURE_COSMOSDB_CONTAINER_NAME'],
-        #                 connection_string=os.environ['AZURE_COMOSDB_CONNECTION_STRING'],
-        #                 session_id=session_id,
-        #                 user_id=user_id
-        #             )
-        # cosmos.prepare_cosmos()
-
-        # memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=5, chat_memory=cosmos, max_token_limit=1000)
+        cosmos = CosmosDBChatMessageHistory(
+                        cosmos_endpoint=os.environ['AZURE_COSMOSDB_ENDPOINT'],
+                        cosmos_database=os.environ['AZURE_COSMOSDB_NAME'],
+                        cosmos_container=os.environ['AZURE_COSMOSDB_CONTAINER_NAME'],
+                        connection_string=os.environ['AZURE_COMOSDB_CONNECTION_STRING'],
+                        session_id=session_id,
+                        user_id=user_id,
+                        ttl=60*60*24*7, # Store history for 1 week
+                    )
+        cosmos.prepare_cosmos()
 
         prompt_topic = EXPERTISE
 
         latent_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "You're an assistant who's good at " + prompt_topic + " and based on the question provided, you will provide 10 reworded questions that help answer the original question."),
+                ("system", "You're an assistant who's good at " + prompt_topic + " and based on the question and conversation history provided, you will provide 10 reworded questions that help best answer the original question."),
+                MessagesPlaceholder(variable_name="history"),
                 ("human", "{question}"),
             ]
         )
 
+        def get_session_history(passed_session_id: str) -> List[BaseMessage]:
+            print(passed_session_id)
+            return cosmos.messages
+    
+
         latent_chain = (
-            {"question": RunnablePassthrough()}
+            {"question": itemgetter("question"), "history": RunnableLambda(get_session_history)}   
             | latent_prompt
             | llm
             | StrOutputParser()
@@ -151,8 +158,14 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
 
         latent_condensed_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "You're an assistant who's good at " + prompt_topic + " and based on the original question and new questions provided, provide the best possible worded question to get the original questions answer."),
-                ("human", """## original question: 
+                ("system", "You're an assistant who's good at " + prompt_topic + " and based on the original question, new questions provided, and conversation history, provide the best possible worded question to get the original questions answer."),
+                ("human", """
+                 #### history: 
+
+                 {history}
+
+
+                 ## original question: 
                  
                  {question}
                  
@@ -164,7 +177,7 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
         )
 
         latent_condensed_chain = (
-            {"question": RunnablePassthrough(), "questions": latent_chain}
+            {"question": itemgetter("question"), "questions": itemgetter("new_questions"), "history": RunnableLambda(get_session_history)}
             | latent_condensed_prompt
             | llm
             | StrOutputParser()
@@ -190,8 +203,8 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
             return documents
 
         _context = {
-            "context": latent_condensed_chain | retriever | _add_sas_urls,
-            "generated_question": latent_condensed_chain
+            "context": itemgetter("condensed_question") | retriever | _add_sas_urls,
+            "generated_question": itemgetter("condensed_question")
         }
 
         chain = (
@@ -201,13 +214,28 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
             | StrOutputParser()
         )
 
-        seq_chain = latent_chain | latent_condensed_chain | chain
+        def add_history(chat):
+            cosmos.add_user_message(chat["question"])
+            cosmos.add_ai_message(chat["answer"])
+            return chat["answer"]
+
+        history_chain = (
+            {"question": itemgetter("question"), "answer": itemgetter("final_answer")}
+            | RunnableLambda(add_history)
+        )
+
+        seq_chain = (
+            RunnablePassthrough.assign(new_questions=latent_chain) 
+            | RunnablePassthrough.assign(condensed_question=latent_condensed_chain)
+            | RunnablePassthrough.assign(final_answer=chain) 
+            | history_chain
+        )
 
         await turn_context.send_activity(Activity(type=ActivityTypes.typing))
         
         # Please note below that running a non-async function like run_agent in a separate thread won't make it truly asynchronous. It allows the function to be called without blocking the event loop, but it may still have synchronous behavior internally.
         loop = asyncio.get_event_loop()
-        answer = await loop.run_in_executor(ThreadPoolExecutor(), seq_chain.invoke, input_text)
+        answer = await loop.run_in_executor(ThreadPoolExecutor(), seq_chain.invoke, {"question": input_text})
         
         await turn_context.send_activity(answer)
 
