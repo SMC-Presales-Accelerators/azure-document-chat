@@ -21,6 +21,8 @@ from bot import MyBot
 
 from bot_auth import bot_auth
 
+from search_index import AzureSearchApi
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -38,6 +40,9 @@ if BASE_PATH != "" and BASE_PATH[0] != "/":
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
 SETTINGS = BotFrameworkAdapterSettings(APP_ID, APP_PASSWORD)
 ADAPTER = BotFrameworkAdapter(SETTINGS)
+
+# Use Azure AI Search to get titles for sidebar
+search = AzureSearchApi()
 
 
 # Catch-all for errors.
@@ -93,6 +98,13 @@ async def messages(req: Request) -> Response:
 async def bot_service_auth(req: Request) -> Response:
     return json_response(bot_auth())
 
+async def get_document_title(req: Request) -> Response:
+    if "application/json" in req.headers["Content-Type"]:
+        body = await req.json()
+    else:
+        return Response(status=415)
+    return json_response(search.get_document_title(body["document_name"]))
+
 async def index(request):
     return web.FileResponse('./static/index.html')
 
@@ -104,6 +116,7 @@ print("Base Path set to: %s" % (BASE_PATH))
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post(BASE_PATH + "/api/messages", messages)
 APP.router.add_get(BASE_PATH + "/api/auth", bot_service_auth)
+APP.router.add_post(BASE_PATH + "/api/get_document_title", get_document_title)
 APP.router.add_get(BASE_PATH + "/", index)
 APP.router.add_get(BASE_PATH + "/favicon.ico", favicon)
 APP.router.add_static(BASE_PATH + "/js", "static/js")

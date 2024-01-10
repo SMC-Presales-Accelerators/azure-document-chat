@@ -6,10 +6,10 @@
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="OpenAI Chat bot providing basic Azure/Microsoft support information">
+    <meta name="description" content="OpenAI Chat bot providing chat functionality against a knowledgebase of documents">
     <meta name="author" content="Cameron Battagler">
     <meta name="generator" content="Hugo 0.118.2">
-    <title>Azure Supportification</title>
+    <title>Azure Document Chat</title>
 
 
 
@@ -281,16 +281,16 @@
             console.log(data);
             if (data.type === 'message') {
                 if (data.from.role === 'bot') {
-                    var urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+                    var urlRegex = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
                     const sources = data.text.match(urlRegex);
                     if (sources) {
                         sources.forEach((source) => {
-
                             var xhr = new XMLHttpRequest();
-                            xhr.open('POST', '/api/urlinfo');
+                            xhr.open('POST', '/api/get_document_title');
                             xhr.setRequestHeader('Content-Type', 'application/json');
+                            name = source.split('/').pop().split('?')[0];
                             var urlinfo = {
-                                url: source
+                                document_name: name
                             }
                             var json = JSON.stringify(urlinfo);
                             xhr.onload = function () {
@@ -298,9 +298,7 @@
                                 const sourceTemplate = `<a href="${source}" target="_blank" class="list-group-item list-group-item-action py-3 lh-sm">
                                         <div class="d-flex w-100 align-items-center justify-content-between">
                                           <strong class="mb-1">${urlinforesult.title}</strong>
-                                          <small class="text-body-secondary">Tues</small>
                                         </div>
-                                        <div class="col-10 mb-1 small">${urlinforesult.description}</div>
                                       </a>`;
                                 var listHtml = document.getElementById('source-list').innerHTML;
                                 document.getElementById('source-list').innerHTML = sourceTemplate + listHtml;
