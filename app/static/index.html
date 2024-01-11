@@ -286,7 +286,7 @@
                     if (sources) {
                         sources.forEach((source) => {
                             var xhr = new XMLHttpRequest();
-                            xhr.open('POST', '/api/get_document_title');
+                            xhr.open('POST', 'api/get_document_title');
                             xhr.setRequestHeader('Content-Type', 'application/json');
                             name = source.split('/').pop().split('?')[0];
                             var urlinfo = {
