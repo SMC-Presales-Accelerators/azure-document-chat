@@ -4,4 +4,4 @@ COPY app .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN chmod +x run.sh
 EXPOSE 3978
-CMD ["sh", "-c", "./run.sh"]
+CMD ["bash", "-c", "./run.sh"]
