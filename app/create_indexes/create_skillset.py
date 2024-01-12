@@ -6,28 +6,8 @@ skillset_payload = {
   "description": "Skillset to chunk documents and generate embeddings",
   "skills": [
     {
-      "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
-      "name": "#1",
-      "context": "/document/pages/*",
-      "resourceUri": "OpenAiEndpoint",
-      "apiKey": "OpenAIKey",
-      "deploymentId": "embedding",
-      "inputs": [
-        {
-          "name": "text",
-          "source": "/document/pages/*"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "embedding",
-          "targetName": "vector"
-        }
-      ]
-    },
-    {
       "@odata.type": "#Microsoft.Skills.Text.SplitSkill",
-      "name": "#2",
+      "name": "#1",
       "description": "Split skill to chunk documents",
       "context": "/document",
       "defaultLanguageCode": "en",
@@ -45,6 +25,26 @@ skillset_payload = {
         {
           "name": "textItems",
           "targetName": "pages"
+        }
+      ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
+      "name": "#2",
+      "context": "/document/pages/*",
+      "resourceUri": "OpenAiEndpoint",
+      "apiKey": "OpenAIKey",
+      "deploymentId": "embedding",
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/pages/*"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "embedding",
+          "targetName": "vector"
         }
       ]
     }

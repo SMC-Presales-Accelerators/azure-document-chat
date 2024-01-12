@@ -16,7 +16,7 @@ class AzureSearchApi:
                                    credential=AzureKeyCredential(self.key))
 
     def get_document_title(self, document_name):
-        results = self.client.search(search_text=f"name:{document_name}", top=1, select="title")
+        results = self.client.search(search_text=f"name:{document_name}", top=1, select="title", filter="title ne null")
         title = ""
         for result in results:
             title = result["title"]
