@@ -2,6 +2,10 @@
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FSMC-Presales-Accelerators%2Fazure-document-chat%2Fmain%2FDeployment%2Fmain.json)
 
+## Deployment Note
+
+Service Principal must be created prior to deployment.
+
 ## Reference documentation
 
 - [Bot Framework Documentation](https://docs.botframework.com)
