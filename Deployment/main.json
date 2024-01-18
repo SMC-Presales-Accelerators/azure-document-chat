@@ -1,0 +1,522 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.24.24.22086",
+      "templateHash": "9000172651555396812"
+    }
+  },
+  "parameters": {
+    "UseExistingStorageAccount": {
+      "type": "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "new",
+        "existing"
+      ],
+      "metadata": {
+        "description": "Do you already have an existing storage account with your documents or would you like to create a new one?"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[uniqueString(parameters('website_name'), 'storage')]",
+      "metadata": {
+        "description": "Storage account name for your source documents to index and chat with"
+      }
+    },
+    "storageContainerName": {
+      "type": "string",
+      "metadata": {
+        "description": "The Container name where your data resides, if you have chose to create at new Storage Account, we will create this container."
+      }
+    },
+    "expertise": {
+      "type": "string",
+      "metadata": {
+        "description": "Describe the data that the bot will be discussing"
+      }
+    },
+    "website_name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name for the app service, this will be the beginning of the FQDN."
+      }
+    },
+    "openai_account_name": {
+      "type": "string",
+      "defaultValue": "[uniqueString(parameters('website_name'), 'openai')]",
+      "metadata": {
+        "description": "Account name for the OpenAI deployment"
+      }
+    },
+    "openai_deployment_name": {
+      "type": "string",
+      "defaultValue": "gpt3516k",
+      "metadata": {
+        "description": "OpenAI Deployment name for the model deployment."
+      }
+    },
+    "appId": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. Active Directory App ID."
+      }
+    },
+    "appPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Required. Active Directory App Secret Value."
+      }
+    },
+    "resourceGroupSearch": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "metadata": {
+        "description": "The resource group your current blob storage account containing your documents is in."
+      }
+    },
+    "azureSearchName": {
+      "type": "string",
+      "defaultValue": "[uniqueString(parameters('website_name'), 'search')]",
+      "metadata": {
+        "description": "Optional. The Azure Search Service Name."
+      }
+    },
+    "azureSearchAPIVersion": {
+      "type": "string",
+      "defaultValue": "2023-10-01-Preview",
+      "metadata": {
+        "description": "Optional. The API version for the Azure Search service."
+      }
+    },
+    "azureOpenAIModelName": {
+      "type": "string",
+      "defaultValue": "gpt-35-turbo-16k",
+      "metadata": {
+        "description": "Optional. The model name for the Azure OpenAI service."
+      }
+    },
+    "azureOpenAIModelVersion": {
+      "type": "string",
+      "defaultValue": "0613"
+    },
+    "azureOpenAIAPIVersion": {
+      "type": "string",
+      "defaultValue": "2023-05-15",
+      "metadata": {
+        "description": "Optional. The API version for the Azure OpenAI service."
+      }
+    },
+    "cosmosDBAccountName": {
+      "type": "string",
+      "defaultValue": "[format('cosmos-{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "Optional. The name of the Azure CosmosDB."
+      }
+    },
+    "cosmosDBDatabaseName": {
+      "type": "string",
+      "defaultValue": "openai",
+      "metadata": {
+        "description": "The name for the SQL API database"
+      }
+    },
+    "cosmosDBContainerName": {
+      "type": "string",
+      "defaultValue": "logs",
+      "metadata": {
+        "description": "Required. The name of the Azure CosmosDB container."
+      }
+    },
+    "botId": {
+      "type": "string",
+      "defaultValue": "[format('BotId-{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "Optional. The globally unique and immutable bot ID. Also used to configure the displayName of the bot, which is mutable."
+      }
+    },
+    "botSKU": {
+      "type": "string",
+      "defaultValue": "S1",
+      "allowedValues": [
+        "F0",
+        "S1"
+      ],
+      "metadata": {
+        "description": "Optional, defaults to S1. The pricing tier of the Bot Service Registration. Acceptable values are F0 and S1."
+      }
+    },
+    "appServicePlanName": {
+      "type": "string",
+      "defaultValue": "[format('AppServicePlan-Backend-{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "Optional. The name of the new App Service Plan."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Optional, defaults to resource group location. The location of the resources."
+      }
+    }
+  },
+  "variables": {
+    "siteHost": "[format('{0}.azurewebsites.net', parameters('website_name'))]",
+    "botEndpoint": "[format('https://{0}/api/messages', variables('siteHost'))]"
+  },
+  "resources": [
+    {
+      "condition": "[equals(parameters('UseExistingStorageAccount'), 'new')]",
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('storageContainerName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+      ]
+    },
+    {
+      "condition": "[equals(parameters('UseExistingStorageAccount'), 'new')]",
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/throughputSettings",
+      "apiVersion": "2023-11-15",
+      "name": "[format('{0}/{1}/{2}', toLower(parameters('cosmosDBAccountName')), parameters('cosmosDBDatabaseName'), 'default')]",
+      "properties": {
+        "resource": {
+          "throughput": 100,
+          "autoscaleSettings": {
+            "maxThroughput": 1000
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', toLower(parameters('cosmosDBAccountName')), parameters('cosmosDBDatabaseName'))]"
+      ]
+    },
+    {
+      "condition": "[equals(parameters('UseExistingStorageAccount'), 'new')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2"
+    },
+    {
+      "type": "Microsoft.Search/searchServices",
+      "apiVersion": "2020-08-01",
+      "name": "[parameters('azureSearchName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "standard"
+      },
+      "properties": {
+        "replicaCount": 1,
+        "partitionCount": 1,
+        "hostingMode": "default"
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-10-01-preview",
+      "name": "[parameters('openai_account_name')]",
+      "kind": "OpenAI",
+      "location": "[parameters('location')]",
+      "properties": {
+        "customSubDomainName": "[parameters('openai_account_name')]",
+        "networkAcls": {
+          "defaultAction": "Allow",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        },
+        "publicNetworkAccess": "Enabled"
+      },
+      "sku": {
+        "name": "S0"
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2023-10-01-preview",
+      "name": "[format('{0}/{1}', parameters('openai_account_name'), parameters('openai_deployment_name'))]",
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "[parameters('azureOpenAIModelName')]",
+          "version": "[parameters('azureOpenAIModelVersion')]"
+        }
+      },
+      "sku": {
+        "capacity": 120,
+        "name": "Standard"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('openai_account_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2023-10-01-preview",
+      "name": "[format('{0}/{1}', parameters('openai_account_name'), 'embedding')]",
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "text-embedding-ada-002",
+          "version": "2"
+        }
+      },
+      "sku": {
+        "capacity": 120,
+        "name": "Standard"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('openai_account_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2022-05-15",
+      "name": "[toLower(parameters('cosmosDBAccountName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        },
+        "locations": [
+          {
+            "locationName": "[parameters('location')]"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+      "apiVersion": "2022-05-15",
+      "name": "[format('{0}/{1}', toLower(parameters('cosmosDBAccountName')), parameters('cosmosDBDatabaseName'))]",
+      "properties": {
+        "resource": {
+          "id": "[parameters('cosmosDBDatabaseName')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', toLower(parameters('cosmosDBAccountName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2022-05-15",
+      "name": "[format('{0}/{1}/{2}', toLower(parameters('cosmosDBAccountName')), parameters('cosmosDBDatabaseName'), parameters('cosmosDBContainerName'))]",
+      "properties": {
+        "resource": {
+          "id": "[parameters('cosmosDBContainerName')]",
+          "partitionKey": {
+            "paths": [
+              "/id"
+            ],
+            "kind": "Hash"
+          },
+          "indexingPolicy": {
+            "indexingMode": "consistent",
+            "includedPaths": [
+              {
+                "path": "/*"
+              }
+            ],
+            "excludedPaths": [
+              {
+                "path": "/_etag/?"
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', toLower(parameters('cosmosDBAccountName')), parameters('cosmosDBDatabaseName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.BotService/botServices",
+      "apiVersion": "2022-09-15",
+      "name": "[parameters('botId')]",
+      "location": "global",
+      "kind": "azurebot",
+      "sku": {
+        "name": "[parameters('botSKU')]"
+      },
+      "properties": {
+        "displayName": "[parameters('botId')]",
+        "iconUrl": "https://docs.botframework.com/static/devportal/client/images/bot-framework-default.png",
+        "endpoint": "[variables('botEndpoint')]",
+        "msaAppId": "[parameters('appId')]",
+        "luisAppIds": [],
+        "schemaTransformationVersion": "1.3",
+        "isCmekEnabled": false
+      }
+    },
+    {
+      "type": "Microsoft.BotService/botServices/channels",
+      "apiVersion": "2022-09-15",
+      "name": "[format('{0}/{1}', parameters('botId'), 'DirectLineChannel')]",
+      "properties": {
+        "channelName": "DirectLineChannel",
+        "properties": {
+          "sites": [
+            {
+              "siteName": "Default Site",
+              "isEnabled": true,
+              "isV1Enabled": true,
+              "isV3Enabled": true,
+              "isSecureSiteEnabled": false,
+              "isBlockUserUploadEnabled": true
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.BotService/botServices', parameters('botId'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('appServicePlanName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "P0v3"
+      },
+      "kind": "linux",
+      "properties": {
+        "reserved": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('website_name')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+        "siteConfig": {
+          "linuxFxVersion": "DOCKER|docker.io/smcpresalesaccelerators/azure-document-chat:latest",
+          "appSettings": [
+            {
+              "name": "EXPERTISE_DESCRIPTION",
+              "value": "[parameters('expertise')]"
+            },
+            {
+              "name": "MICROSOFT_APP_ID",
+              "value": "[parameters('appId')]"
+            },
+            {
+              "name": "MICROSOFT_APP_PASSWORD",
+              "value": "[parameters('appPassword')]"
+            },
+            {
+              "name": "BLOB_CHAT_CONNECTION_STRING",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', parameters('storageAccountName'), if(equals(parameters('UseExistingStorageAccount'), 'new'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2022-09-01').keys[0].value, listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupSearch')), 'Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2022-09-01').keys[0].value), environment().suffixes.storage)]"
+            },
+            {
+              "name": "BLOB_CHAT_CONTAINER_NAME",
+              "value": "[parameters('storageContainerName')]"
+            },
+            {
+              "name": "AZURE_SEARCH_ENDPOINT",
+              "value": "[format('https://{0}.search.windows.net', parameters('azureSearchName'))]"
+            },
+            {
+              "name": "AZURE_SEARCH_KEY",
+              "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2020-08-01').primaryKey]"
+            },
+            {
+              "name": "AZURE_SEARCH_API_VERSION",
+              "value": "[parameters('azureSearchAPIVersion')]"
+            },
+            {
+              "name": "AZURE_OPENAI_ENDPOINT",
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('openai_account_name')), '2023-10-01-preview').endpoint]"
+            },
+            {
+              "name": "AZURE_OPENAI_API_KEY",
+              "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', parameters('openai_account_name')), '2023-10-01-preview').key1]"
+            },
+            {
+              "name": "AZURE_OPENAI_MODEL_NAME",
+              "value": "[parameters('azureOpenAIModelName')]"
+            },
+            {
+              "name": "AZURE_OPENAI_CHATGPT_MODEL",
+              "value": "[parameters('azureOpenAIModelName')]"
+            },
+            {
+              "name": "AZURE_OPENAI_CHATGPT_DEPLOYMENT",
+              "value": "[parameters('openai_deployment_name')]"
+            },
+            {
+              "name": "AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
+              "value": "embedding"
+            },
+            {
+              "name": "AZURE_OPENAI_API_VERSION",
+              "value": "[parameters('azureOpenAIAPIVersion')]"
+            },
+            {
+              "name": "AZURE_COSMOSDB_ENDPOINT",
+              "value": "[format('https://{0}.documents.azure.com:443/', parameters('cosmosDBAccountName'))]"
+            },
+            {
+              "name": "AZURE_COSMOSDB_NAME",
+              "value": "[parameters('cosmosDBDatabaseName')]"
+            },
+            {
+              "name": "AZURE_COSMOSDB_CONTAINER_NAME",
+              "value": "[parameters('cosmosDBContainerName')]"
+            },
+            {
+              "name": "AZURE_COMOSDB_CONNECTION_STRING",
+              "value": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', toLower(parameters('cosmosDBAccountName'))), '2022-05-15').connectionStrings[0].connectionString]"
+            },
+            {
+              "name": "BOT_DIRECTLINE_SECRET_KEY",
+              "value": "[listChannelWithKeys(resourceId('Microsoft.BotService/botServices/channels', parameters('botId'), 'DirectLineChannel'), '2022-09-15').properties.sites[0].key]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', toLower(parameters('cosmosDBAccountName')))]",
+        "[resourceId('Microsoft.BotService/botServices/channels', parameters('botId'), 'DirectLineChannel')]",
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('openai_account_name'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+        "[resourceId('Microsoft.Search/searchServices', parameters('azureSearchName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "botServiceName": {
+      "type": "string",
+      "value": "[parameters('botId')]"
+    },
+    "webAppName": {
+      "type": "string",
+      "value": "[parameters('website_name')]"
+    },
+    "webAppUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('website_name')), '2022-09-01').defaultHostName]"
+    }
+  }
+}
