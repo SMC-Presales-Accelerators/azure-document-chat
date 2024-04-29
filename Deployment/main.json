@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.26.170.59819",
-      "templateHash": "6051951664342770077"
+      "templateHash": "10598263392565446546"
     }
   },
   "parameters": {
@@ -410,7 +410,7 @@
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
         "siteConfig": {
-          "linuxFxVersion": "DOCKER|docker.io/smcpresalesaccelerators/azure-document-chat:latest",
+          "linuxFxVersion": "DOCKER|smcpresalesaccelerators/azure-document-chat:latest",
           "appSettings": [
             {
               "name": "EXPERTISE_DESCRIPTION",
