@@ -284,7 +284,7 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      linuxFxVersion: 'DOCKER|docker.io/smcpresalesaccelerators/azure-document-chat:latest'
+      linuxFxVersion: 'DOCKER|smcpresalesaccelerators/azure-document-chat:latest'
       appSettings: [
         {
           name: 'EXPERTISE_DESCRIPTION'

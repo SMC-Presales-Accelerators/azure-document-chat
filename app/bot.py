@@ -42,6 +42,7 @@ os.environ["AZURESEARCH_FIELDS_CONTENT_VECTOR"] = "chunkVector"
 from langchain_community.vectorstores.azuresearch import AzureSearch
 
 EXPERTISE = os.environ["EXPERTISE_DESCRIPTION"]
+DISCLAIMER = os.environ["BOT_DISCLAIMER"]
 
 # Callback hanlder used for the bot service to inform the client of the thought process before the final response
 class BotServiceCallbackHandler(BaseCallbackHandler):
@@ -78,6 +79,10 @@ I'm a smart virtual assistant designed to help you find answers to your question
 
 Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to answer it for you.
 """
+
+        if DISCLAIMER:
+            WELCOME_MESSAGE = WELCOME_MESSAGE + """
+DISCLAIMER: """ + DISCLAIMER 
 
         for member_added in members_added:
             if member_added.id != turn_context.activity.recipient.id:
@@ -137,7 +142,7 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
 
         latent_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "You're an assistant who's good at " + prompt_topic + " and based on the question and conversation history provided, you will provide 10 reworded questions that help best answer the original question."),
+                ("system", "You're an expert in " + prompt_topic + " and based on the question and conversation history provided, you will provide 10 reworded questions that help best answer the original question."),
                 MessagesPlaceholder(variable_name="history"),
                 ("human", "{question}"),
             ]
@@ -157,7 +162,7 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
 
         latent_condensed_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "You're an assistant who's good at " + prompt_topic + " and based on the original question, new questions provided, and conversation history, provide the best possible worded question to get the original questions answer."),
+                ("system", "You're an expert in " + prompt_topic + " and based on the original question, new questions provided, and conversation history, provide the best possible worded question to get the original questions answer."),
                 ("human", """
                  #### history: 
 
@@ -182,7 +187,7 @@ Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to 
             | StrOutputParser()
         )
 
-        template = """You're an assistant who's good at """ + prompt_topic + """. Answer the question and provide more details based only on the following context sources are provided in the location metadata field:
+        template = """You're an expert at at """ + prompt_topic + """. Answer the question and provide more details based only on the following context sources are provided in the location metadata field:
         {context}
 
         Question: {generated_question}
