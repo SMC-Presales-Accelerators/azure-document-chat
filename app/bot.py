@@ -42,7 +42,7 @@ os.environ["AZURESEARCH_FIELDS_CONTENT_VECTOR"] = "chunkVector"
 from langchain_community.vectorstores.azuresearch import AzureSearch
 
 EXPERTISE = os.environ["EXPERTISE_DESCRIPTION"]
-DISCLAIMER = os.environ["BOT_DISCLAIMER"]
+DISCLAIMER = os.environ.get("BOT_DISCLAIMER", "")
 
 # Callback hanlder used for the bot service to inform the client of the thought process before the final response
 class BotServiceCallbackHandler(BaseCallbackHandler):
@@ -80,7 +80,7 @@ I'm a smart virtual assistant designed to help you find answers to your question
 Feel free to ask me anything about """ + EXPERTISE + """ and I'll do my best to answer it for you.
 """
 
-        if DISCLAIMER:
+        if DISCLAIMER != "":
             WELCOME_MESSAGE = WELCOME_MESSAGE + """
 DISCLAIMER: """ + DISCLAIMER 
 
