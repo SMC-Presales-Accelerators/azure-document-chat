@@ -1,0 +1,13 @@
+aiohttp
+botbuilder-core
+tiktoken
+azure-storage-blob 
+azure-identity
+azure-cosmos
+azure-search-documents
+python-dotenv
+langchain-core
+langchain-community
+langchain-openai
+requests
+gunicorn

@@ -97,9 +97,9 @@ def create_skillset(skillset_name, azure_search_endpoint, api_key, index_name, o
 
     skillset_payload["name"] = skillset_name
 
-    skillset_payload["skills"][0]["resourceUri"] = openai_endpoint
-    skillset_payload["skills"][0]["deploymentId"] = openai_embedding_deployment_name
-    skillset_payload["skills"][0]["apiKey"] = openai_api_key
+    skillset_payload["skills"][1]["resourceUri"] = openai_endpoint
+    skillset_payload["skills"][1]["deploymentId"] = openai_embedding_deployment_name
+    skillset_payload["skills"][1]["apiKey"] = openai_api_key
 
     skillset_payload["indexProjections"]["selectors"][0]["targetIndexName"] = index_name
 
