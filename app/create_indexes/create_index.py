@@ -8,7 +8,7 @@ index_payload = {
         {"name": "parent_id", "type": "Edm.String", "searchable": "true", "filterable": "true", "retrievable": "true", "sortable": "true", "facetable": "true", "key": "false"},
         {"name": "title","type": "Edm.String","searchable": "true","retrievable": "true"},
         {"name": "chunk","type": "Edm.String","searchable": "true","retrievable": "true"},
-        {"name": "chunkVector","type": "Collection(Edm.Single)","searchable": "true","retrievable": "true","dimensions": 1536,"vectorSearchProfile": "openai-vectordb-profile"},
+        {"name": "chunkVector","type": "Collection(Edm.Single)","searchable": "true","retrievable": "true","dimensions": 3072,"vectorSearchProfile": "openai-vectordb-profile"},
         {"name": "name", "type": "Edm.String", "searchable": "true", "retrievable": "true", "sortable": "false", "filterable": "false", "facetable": "false"},
         {"name": "location", "type": "Edm.String", "searchable": "false", "retrievable": "true", "sortable": "false", "filterable": "false", "facetable": "false"},
 

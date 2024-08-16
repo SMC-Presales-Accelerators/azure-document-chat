@@ -137,6 +137,7 @@ DISCLAIMER: """ + DISCLAIMER
                         ttl=60*60*24*7, # Store history for 1 week
                     )
         cosmos.prepare_cosmos()
+        cosmos.load_messages()
 
         prompt_topic = EXPERTISE
 
@@ -190,6 +191,8 @@ DISCLAIMER: """ + DISCLAIMER
         template = """You're an expert at at """ + prompt_topic + """. Answer the question and provide more details based only on the following context sources are provided in the location metadata field:
         {context}
 
+        Here is conversation history for extra context when asked about "this" or specifics in past answers: {history}
+
         Question: {generated_question}
 
         You will get 40 points if you include the source of your answer with it's full url including parameters in a markdown link
@@ -208,7 +211,8 @@ DISCLAIMER: """ + DISCLAIMER
 
         _context = {
             "context": itemgetter("condensed_question") | retriever | _add_sas_urls,
-            "generated_question": itemgetter("condensed_question")
+            "generated_question": itemgetter("condensed_question"),
+            "history": RunnableLambda(get_session_history)
         }
 
         chain = (
@@ -221,6 +225,7 @@ DISCLAIMER: """ + DISCLAIMER
         def add_history(chat):
             cosmos.add_user_message(chat["question"])
             cosmos.add_ai_message(chat["answer"])
+            cosmos.upsert_messages()
             return chat["answer"]
 
         history_chain = (
